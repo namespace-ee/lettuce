@@ -124,6 +124,10 @@ class Command(BaseCommand):
             "--pdb", dest="auto_pdb", default=False, action="store_true",
             help='Launches an interactive debugger upon error'
         )
+        parser.add_argument(
+            '-k', '--keepdb', action='store_true', dest='keepdb', default=False,
+            help='Preserves the test DB between runs.'
+        )
         if DJANGO_VERSION < StrictVersion('1.7'):
             # Django 1.7 introduces the --no-color flag. We must add the flag
             # to be compatible with older django versions
@@ -159,6 +163,7 @@ class Command(BaseCommand):
         failfast = options['failfast']
         auto_pdb = options['auto_pdb']
         threading = options['use_threading']
+        keepdb = options['keepdb']
 
         if test_database:
             migrate_south = getattr(settings, "SOUTH_TESTS_MIGRATE", True)
@@ -170,7 +175,7 @@ class Command(BaseCommand):
                 pass
 
             from django.test.utils import get_runner
-            self._testrunner = get_runner(settings)(interactive=False)
+            self._testrunner = get_runner(settings)(interactive=False, keepdb=keepdb, verbosity=verbosity)              # debug_sql=False, parallel=0
             self._testrunner.setup_test_environment()
             self._old_db_config = self._testrunner.setup_databases()
 
@@ -217,7 +222,7 @@ class Command(BaseCommand):
                                 subunit_filename=options.get('subunit_file'),
                                 jsonreport_filename=options.get('jsonreport_file'),
                                 tags=tags, failfast=failfast, auto_pdb=auto_pdb,
-                                smtp_queue=smtp_queue)
+                                smtp_queue=smtp_queue, keepdb=keepdb)
 
                 result = runner.run()
                 if app_module is not None:
